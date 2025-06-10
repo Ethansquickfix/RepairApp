@@ -1,0 +1,18 @@
+body {
+    font-family: Arial, sans-serif;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+#camera {
+    width: 100%;
+    border: 2px dashed #ccc;
+    margin: 10px 0;
+}
+button {
+    padding: 10px 15px;
+    background: #4285f4;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
