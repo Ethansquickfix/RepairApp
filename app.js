@@ -1,32 +1,76 @@
-// Sample device database
-const devices = {
-    "iphone": {
-        name: "iPhone 15 Pro",
-        repairs: ["Screen", "Battery", "Back Glass"]
-    },
-    "macbook": {
-        name: "MacBook Air M2", 
-        repairs: ["Keyboard", "Battery", "Display"]
-    }
-};
+// ======================
+// RSS Feed Integration
+// ======================
 
-// Camera setup
-const video = document.getElementById('camera');
-navigator.mediaDevices.getUserMedia({ video: true })
-    .then(stream => video.srcObject = stream);
-
-// Identification function
-document.getElementById('captureBtn').addEventListener('click', () => {
-    const deviceKey = Math.random() > 0.5 ? "iphone" : "macbook"; // Mock AI
-    const device = devices[deviceKey];
+async function fetchDeviceGuides(deviceName) {
+  // Convert "iPhone 15 Pro" to "iPhone_15_Pro"
+  const formattedName = deviceName.replace(/\s+/g, '_');
+  const rssUrl = `https://www.ifixit.com/Device/${formattedName}/Guides.rss`;
+  
+  try {
+    // Using CORS proxy to avoid issues (free service)
+    const proxyUrl = 'https://api.allorigins.win/get?url=';
+    const response = await fetch(`${proxyUrl}${encodeURIComponent(rssUrl)}`);
+    const data = await response.json();
     
+    // Parse the RSS XML content
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(data.contents, "text/xml");
+    
+    // Extract guide information
+    const items = xmlDoc.querySelectorAll("item");
+    const guides = Array.from(items).map(item => ({
+      title: item.querySelector("title").textContent,
+      link: item.querySelector("link").textContent,
+      difficulty: item.querySelector("ifixit:difficulty")?.textContent || "Unknown"
+    }));
+    
+    return guides.slice(0, 5); // Return first 5 guides
+  } catch (error) {
+    console.error("Guide loading failed:", error);
+    return []; // Return empty array if error
+  }
+}
+
+// ======================
+// Main App Functionality
+// ======================
+
+document.getElementById('captureBtn').addEventListener('click', async () => {
+  // For now, using mock detection - replace later with AI
+  const detectedDevice = "iPhone 13"; 
+  
+  // Show loading state
+  document.getElementById('result').innerHTML = `
+    <div class="loading">
+      <p>🔍 Searching guides for ${detectedDevice}...</p>
+    </div>
+  `;
+  
+  // Fetch actual guides from iFixit
+  const guides = await fetchDeviceGuides(detectedDevice);
+  
+  // Display results
+  if (guides.length > 0) {
+    let html = `<h3>${detectedDevice} Repair Guides</h3><ul class="guide-list">`;
+    guides.forEach(guide => {
+      html += `
+        <li>
+          <a href="${guide.link}" target="_blank">
+            <span class="guide-title">${guide.title}</span>
+            <span class="guide-difficulty">Difficulty: ${guide.difficulty}</span>
+          </a>
+        </li>
+      `;
+    });
+    html += `</ul>`;
+    document.getElementById('result').innerHTML = html;
+  } else {
     document.getElementById('result').innerHTML = `
-        <h2>Identified: ${device.name}</h2>
-        <h3>Common Repairs:</h3>
-        <ul>
-            ${device.repairs.map(repair => 
-                `<li>${repair} <a href="https://www.ifixit.com/search?q=${device.name}+${repair}" target="_blank">(Guide)</a></li>`
-            ).join('')}
-        </ul>
+      <div class="error">
+        <p>No guides found for ${detectedDevice}.</p>
+        <p>Try searching directly on <a href="https://www.ifixit.com/Answers/Search?query=${encodeURIComponent(detectedDevice)}" target="_blank">iFixit.com</a></p>
+      </div>
     `;
+  }
 });
