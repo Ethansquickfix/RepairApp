@@ -1,67 +1,78 @@
-// ======================
-// CONFIGURATION
-// ======================
+// CONFIG - Customize these devices and guides
 const DEVICE_GUIDES = {
-    "iPhone 13": ["Screen Replacement", "Battery Replacement", "Back Glass Repair"],
-    "iPhone 12": ["Display Assembly", "Camera Repair", "Charging Port"],
-    "MacBook Air M1": ["Battery Replacement", "Keyboard Repair", "Trackpad"],
-    "Galaxy S23": ["Screen Repair", "USB-C Port", "Back Glass"],
-    "PS5": ["HDMI Port Replacement", "Fan Cleaning", "Power Supply"]
+    "iPhone 13": {
+        "Screen Replacement": "iphone-13-screen-replacement",
+        "Battery Replacement": "iphone-13-battery-replacement",
+        "Charging Port": "iphone-13-charging-port-replacement"
+    },
+    "MacBook Air M1": {
+        "Battery Replacement": "macbook-air-m1-2020-battery-replacement",
+        "Keyboard Replacement": "macbook-air-m1-keyboard-replacement"
+    },
+    "PS5": {
+        "HDMI Port Replacement": "ps5-hdmi-port-replacement",
+        "Fan Cleaning": "ps5-cooling-fan-replacement"
+    }
 };
 
+// DOM Elements
+const video = document.getElementById('camera');
+const resultDiv = document.getElementById('result');
+
 // ======================
-// EMBEDDED GUIDE VIEWER
+// EMBED REAL GUIDES (NOT FORUMS)
 // ======================
-function showEmbeddedGuide(guideTitle, deviceName) {
-    // Clean the guide title for URL
-    const cleanTitle = guideTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    const embedUrl = `https://www.ifixit.com/Guide/${encodeURIComponent(deviceName.replace(/\s+/g, '+'))}+${encodeURIComponent(cleanTitle)}/embed`;
-    
+function showEmbeddedGuide(deviceName, repairName, guideSlug) {
     resultDiv.innerHTML = `
-        <div class="guide-viewer">
-            <h3>${guideTitle}</h3>
-            <iframe src="${embedUrl}" class="guide-iframe"></iframe>
-            <button onclick="showDeviceGuides('${deviceName}')">← Back to Repairs</button>
+        <div class="guide-container">
+            <h3>${deviceName} - ${repairName}</h3>
+            <div class="guide-actions">
+                <button onclick="showDeviceGuides('${deviceName}')">← Back to Repairs</button>
+                <button onclick="window.open('https://www.ifixit.com/Guide/${guideSlug}')">
+                    View on iFixit.com ↗
+                </button>
+            </div>
+            <iframe 
+                src="https://www.ifixit.com/Guide/${guideSlug}/embed" 
+                class="guide-iframe"
+                loading="lazy">
+            </iframe>
         </div>
     `;
 }
 
 // ======================
-// DEVICE GUIDE DISPLAY
+// SHOW AVAILABLE REPAIRS
 // ======================
 function showDeviceGuides(deviceName) {
-    const guides = DEVICE_GUIDES[deviceName] || [
-        "Battery Replacement",
-        "Screen Repair",
-        "Charging Port Repair"
-    ];
-    
+    const guides = DEVICE_GUIDES[deviceName] || {
+        "Battery Replacement": "battery-replacement",
+        "Screen Repair": "screen-replacement"
+    };
+
     let html = `
         <h2>${deviceName}</h2>
         <h3>Select Repair:</h3>
-        <ul class="guide-list">
+        <div class="repair-buttons">
     `;
-    
-    guides.forEach(guide => {
+
+    for (const [repairName, guideSlug] of Object.entries(guides)) {
         html += `
-            <li>
-                <button onclick="showEmbeddedGuide('${guide}', '${deviceName}')">
-                    ${guide}
-                </button>
-            </li>
+            <button 
+                onclick="showEmbeddedGuide('${deviceName}', '${repairName}', '${guideSlug}')"
+                class="repair-btn">
+                ${repairName}
+            </button>
         `;
-    });
-    
-    html += `</ul>`;
+    }
+
+    html += `</div>`;
     resultDiv.innerHTML = html;
 }
 
 // ======================
 // MAIN APP FLOW
 // ======================
-const video = document.getElementById('camera');
-const resultDiv = document.getElementById('result');
-
 document.getElementById('captureBtn').addEventListener('click', () => {
     // Mock detection - replace with your AI later
     const devices = Object.keys(DEVICE_GUIDES);
@@ -74,7 +85,7 @@ document.getElementById('captureBtn').addEventListener('click', () => {
         </div>
     `;
     
-    setTimeout(() => showDeviceGuides(randomDevice), 800);
+    setTimeout(() => showDeviceGuides(randomDevice), 500);
 });
 
 // Initialize camera
